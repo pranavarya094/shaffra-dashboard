@@ -84,6 +84,28 @@ footer{margin:60px 0 40px;padding-top:20px;border-top:1px solid var(--line);disp
 dialog{background:var(--s1);color:var(--ink);border:1px solid var(--line2);padding:28px;max-width:520px;width:calc(100% - 32px)}
 dialog::backdrop{background:rgba(0,0,0,.7)}
 dialog h3{margin:0 0 8px;font-size:20px;font-weight:600}
+
+.gwrap{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:16px}
+@media(max-width:760px){.gwrap{grid-template-columns:1fr}}
+.gauge{text-align:center}
+.gauge svg{width:100%;max-width:300px;overflow:visible}
+.gauge .pct{font-size:44px;font-weight:600;letter-spacing:-.03em;margin-top:-6px;font-variant-numeric:tabular-nums}
+.gauge .verdict{display:inline-block;margin-top:6px;padding:4px 12px;border:1px solid var(--line2);font-family:"Geist Mono",monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.v-green{color:#3ddc97;border-color:rgba(61,220,151,.5)!important}.v-yellow{color:#f5b14a;border-color:rgba(245,177,74,.5)!important}.v-red{color:#ff6b8a;border-color:rgba(255,107,138,.5)!important}
+.metric{padding:14px 0;border-bottom:1px solid var(--line)}.metric:last-child{border-bottom:0}
+.mrow{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.mrow .n{font-weight:500}.mrow .val{font-variant-numeric:tabular-nums;font-size:18px;font-weight:500}
+.mrow .tg{color:var(--mute);font-size:12px}
+.track{position:relative;height:8px;margin:10px 0 4px;background:linear-gradient(90deg,#ef4444 0%,#f5b14a 50%,#3ddc97 100%);opacity:.9}
+.track i{position:absolute;top:-5px;width:3px;height:18px;background:#fff;box-shadow:0 0 8px rgba(255,255,255,.8);transform:translateX(-50%)}
+.mfoot{display:flex;justify-content:space-between;color:var(--faint);font-size:11px;font-family:"Geist Mono",monospace}
+.advice{margin:0;padding:0;list-style:none}.advice li{padding:10px 0 10px 18px;border-bottom:1px solid var(--line);position:relative;color:var(--ink)}
+.advice li:last-child{border-bottom:0}.advice li:before{content:"";position:absolute;left:0;top:18px;width:7px;height:7px;background:var(--accent)}
+.pill{display:inline-block;padding:2px 10px;border:1px solid var(--line2);font-size:12px;color:var(--accent-hi)}
+.smalls{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:16px}
+.mini{border:1px solid var(--line);padding:14px;background:var(--s1)}.mini .t{font-size:13px;margin-bottom:6px}.mini .p{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+.leadtable td:last-child,.leadtable th:last-child{text-align:left}
+.leadtable td,.leadtable th{text-align:left}
 </style>
 </head>
 <body>
@@ -201,15 +223,21 @@ function render(){
   const total = sum(all,'spend');
   main.innerHTML = `
   <div class="kpis">${k.map(([l,v,h])=>`<div class="kpi ${h?'hl':''}"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('')}</div>
-  <section><div class="sh"><div class="eyebrow"><b>02</b>LinkedIn credit</div></div>
+  <section><div class="sh"><div class="eyebrow"><b>02</b>Progress</div><div class="note" id="sampleNote"></div></div>
+    <div class="gwrap"><div class="card gauge" id="gaugeCard"></div><div class="card" id="metricCard"></div></div>
+    <div class="card" style="margin-top:16px"><h2>What the numbers say</h2><ul class="advice" id="advice"></ul></div>
+    <div class="smalls" id="adsetGauges"></div></section>
+  <section><div class="sh"><div class="eyebrow"><b>03</b>LinkedIn credit</div></div>
     <div class="card"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b>${money(total)}</b> <span class="note">of ${money(CREDIT_TARGET)} spend target</span></div><div class="note">${Math.max(0,CREDIT_TARGET-total)>0?money(CREDIT_TARGET-total)+' to go':'Target reached'}</div></div>
     <div class="bar"><i style="width:${Math.min(100,total/CREDIT_TARGET*100)}%"></i></div>
     <div class="note">Counts spend across all ad sets, including the boost post.</div></div></section>
-  <section><div class="sh"><div class="eyebrow"><b>03</b>Trends</div></div>
+  <section><div class="sh"><div class="eyebrow"><b>04</b>Trends</div></div>
     <div class="grid"><div class="card"><h2>Daily spend<span>USD</span></h2><canvas id="c1"></canvas></div><div class="card"><h2>Daily leads</h2><canvas id="c2"></canvas></div></div>
     <div class="grid" style="margin-top:16px"><div class="card"><h2>Cumulative spend and leads</h2><canvas id="c3"></canvas></div><div class="card"><h2>Cost per lead<span>by ad set</span></h2><canvas id="c4"></canvas></div></div></section>
-  <section><div class="sh"><div class="eyebrow"><b>04</b>Ad sets</div></div>
-    <div class="card scroll"><table id="t"></table></div></section>`;
+  <section><div class="sh"><div class="eyebrow"><b>05</b>Ad sets</div></div>
+    <div class="card scroll"><table id="t"></table></div></section>
+  <section><div class="sh"><div class="eyebrow"><b>06</b>Leads</div><div class="note" id="leadCount"></div></div>
+    <div class="card scroll"><table id="lt" class="leadtable"></table></div></section>`;
 
   Chart.defaults.font.family='Geist, system-ui, sans-serif'; Chart.defaults.color='#9b98a3';
   const names=[...new Set(data.map(r=>r.camp))];
@@ -228,6 +256,79 @@ function render(){
   const cplNames=names.filter(n=>sum(by[n],'leads')>0);
   charts.push(new Chart($('#c4'),{type:'bar',data:{labels:cplNames.map(short),datasets:[{label:'Cost per lead ($)',data:cplNames.map(n=>sum(by[n],'spend')/sum(by[n],'leads')),backgroundColor:'#8a4af5',borderWidth:0}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'rgba(255,255,255,.06)'},border:{display:false}},y:{grid:{display:false},border:{color:'rgba(255,255,255,.14)'}}}}}));
   $('#t').innerHTML='<tr><th>Ad set</th><th>Spend</th><th>Impr.</th><th>Clicks</th><th>CTR</th><th>Leads</th><th>CPL</th></tr>'+names.map(n=>{const a=by[n],s=sum(a,'spend'),i=sum(a,'imp'),c=sum(a,'clk'),l=sum(a,'leads');return `<tr><td>${short(n)}</td><td>${money(s)}</td><td>${num(i)}</td><td>${num(c)}</td><td>${i?(c/i*100).toFixed(2)+'%':'-'}</td><td>${num(l)}</td><td>${l?money(s/l):'-'}</td></tr>`}).join('');
+  renderProgress(data); renderLeads();
+}
+
+
+/* ---------- progress scoring ---------- */
+// Rule-of-thumb targets for B2B LinkedIn lead gen. Tune these as real results come in.
+const TARGETS = {
+  cpl:  {good:40,  bad:120, label:'Cost per lead',      fmt:v=>money(v), dir:'low',  w:.40, goodTxt:'$40 or less', badTxt:'$120 or more'},
+  cpc:  {good:2,   bad:7,   label:'Cost per click',     fmt:v=>money(v), dir:'low',  w:.20, goodTxt:'$2 or less',  badTxt:'$7 or more'},
+  ctr:  {good:.8,  bad:.3,  label:'Click-through rate', fmt:v=>v.toFixed(2)+'%', dir:'high', w:.20, goodTxt:'0.8% or more', badTxt:'0.3% or less'},
+  conv: {good:6,   bad:1,   label:'Leads per click',    fmt:v=>v.toFixed(1)+'%', dir:'high', w:.20, goodTxt:'6% or more',  badTxt:'1% or less'}
+};
+const clamp = x => Math.max(0, Math.min(1, x));
+const scoreOf = (k,x) => { const T=TARGETS[k]; return T.dir==='low' ? clamp((T.bad-x)/(T.bad-T.good)) : clamp((x-T.bad)/(T.good-T.bad)); };
+function metricsOf(rows){
+  const s=sum(rows,'spend'), i=sum(rows,'imp'), c=sum(rows,'clk'), l=sum(rows,'leads');
+  const m={};
+  if(l>0) m.cpl=s/l; if(c>0){ m.cpc=s/c; m.conv=l/c*100; } if(i>0) m.ctr=c/i*100;
+  return {m, s, i, c, l};
+}
+function overall(m){
+  let tw=0, t=0; for(const k in TARGETS){ if(m[k]!==undefined){ tw+=TARGETS[k].w; t+=TARGETS[k].w*scoreOf(k,m[k]); } }
+  // no leads yet: score what we can but cap the result
+  return tw? Math.round(t/tw*100) : null;
+}
+const band = p => p>=70?['green','On track']:p>=40?['yellow','Needs attention']:['red','Off track'];
+function gaugeSvg(p){
+  const ang = -90 + p*1.8;
+  return `<svg viewBox="0 0 200 118"><defs><linearGradient id="gg" x1="0" x2="1"><stop offset="0" stop-color="#ef4444"/><stop offset=".5" stop-color="#f5b14a"/><stop offset="1" stop-color="#3ddc97"/></linearGradient></defs>
+  <path d="M14 104 A86 86 0 0 1 186 104" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="16"/>
+  <path d="M14 104 A86 86 0 0 1 186 104" fill="none" stroke="url(#gg)" stroke-width="16"/>
+  <g transform="rotate(${ang} 100 104)"><path d="M100 104 L100 28" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="100" cy="104" r="7" fill="#fff"/></g></svg>`;
+}
+function renderProgress(data){
+  const lg = data.filter(r=>/lead gen/i.test(r.camp));
+  const gc=$('#gaugeCard'), mc=$('#metricCard');
+  if(!lg.length){ gc.innerHTML='<div class="note">Progress is scored on lead gen ad sets. None in this selection.</div>'; mc.innerHTML=''; $('#advice').innerHTML=''; $('#adsetGauges').innerHTML=''; $('#sampleNote').textContent=''; return; }
+  const {m, s, c, l} = metricsOf(lg);
+  const pct = overall(m); const [bc, bt] = band(pct);
+  gc.innerHTML = `<div class="eyebrow" style="margin-bottom:8px">Success score</div>${gaugeSvg(pct)}<div class="pct">${pct}%</div><div class="verdict v-${bc}">${bt}</div><div class="note" style="margin-top:10px">Lead gen ad sets only. The boost post is excluded.</div>`;
+  mc.innerHTML = Object.keys(TARGETS).map(k=>{
+    const T=TARGETS[k], has=m[k]!==undefined, sc=has?Math.round(scoreOf(k,m[k])*100):null, [col]=has?band(sc):['yellow'];
+    return `<div class="metric"><div class="mrow"><span class="n">${T.label}</span><span class="val ${has?'v-'+col:''}" style="border:0">${has?T.fmt(m[k]):'No data yet'}</span><span class="tg">Good: ${T.goodTxt} · Poor: ${T.badTxt}</span></div>
+    <div class="track"><i style="left:${has?sc:50}%"></i></div><div class="mfoot"><span>POOR</span><span>${has?sc+'% of target':''}</span><span>GOOD</span></div></div>`;
+  }).join('');
+  $('#sampleNote').textContent = l<10 ? `Early read: only ${l} lead${l===1?'':'s'} so far, so treat this as directional.` : '';
+  // advice
+  const tips=[];
+  const dt = `${money(s)} spent, ${num(c)} clicks, ${num(l)} leads.`;
+  tips.push(dt);
+  if(m.ctr!==undefined) tips.push(m.ctr>=TARGETS.ctr.good ? `Ads are earning clicks: CTR is ${m.ctr.toFixed(2)}%, above the ${TARGETS.ctr.good}% target. The creative and offer are landing.` : m.ctr>TARGETS.ctr.bad ? `CTR is ${m.ctr.toFixed(2)}%, acceptable but below the ${TARGETS.ctr.good}% target. Test a stronger headline or image.` : `CTR is only ${m.ctr.toFixed(2)}%. The ad is not catching attention. Change the image or headline first.`);
+  if(m.cpc!==undefined) tips.push(m.cpc<=TARGETS.cpc.good ? `Clicks are cheap at ${money(m.cpc)}.` : m.cpc<TARGETS.cpc.bad ? `Cost per click is ${money(m.cpc)}, in the normal range for senior B2B audiences.` : `Cost per click is ${money(m.cpc)}, expensive. The audience may be too narrow or competitive.`);
+  if(m.cpl!==undefined) tips.push(m.cpl<=TARGETS.cpl.good ? `Cost per lead is ${money(m.cpl)}, inside the ${money(TARGETS.cpl.good)} target.` : m.cpl<TARGETS.cpl.bad ? `Cost per lead is ${money(m.cpl)}, above the ${money(TARGETS.cpl.good)} target but workable. Watch it as leads grow.` : `Cost per lead is ${money(m.cpl)}, too high. Fix the form or offer before adding budget.`);
+  else tips.push('No leads yet, so cost per lead cannot be judged.');
+  if(m.conv!==undefined) tips.push(m.conv>=TARGETS.conv.good ? `Visitors turn into leads well (${m.conv.toFixed(1)}% of clicks).` : m.conv>TARGETS.conv.bad ? `${m.conv.toFixed(1)}% of clicks become leads. Shorter form or clearer promise could lift this.` : `Only ${m.conv.toFixed(1)}% of clicks become leads. The form is losing people.`);
+  const by=group(lg,'camp'); const names=Object.keys(by);
+  if(names.length>1){
+    const sc=names.map(n=>({n, p:overall(metricsOf(by[n]).m)})).filter(x=>x.p!==null).sort((a,b)=>b.p-a.p);
+    if(sc.length>1) tips.push(`Best ad set so far: ${short(sc[0].n)} (${sc[0].p}%). Weakest: ${short(sc[sc.length-1].n)} (${sc[sc.length-1].p}%).`);
+  }
+  $('#advice').innerHTML = tips.map(x=>`<li>${x}</li>`).join('');
+  // per ad set mini gauges
+  $('#adsetGauges').innerHTML = names.map(n=>{ const r=metricsOf(by[n]); const p=overall(r.m); if(p===null) return ''; const [bc2,bt2]=band(p);
+    return `<div class="mini"><div class="t">${short(n)}</div><div class="p v-${bc2}" style="border:0">${p}%</div><div class="note">${bt2} · ${num(r.l)} lead${r.l===1?'':'s'} · ${money(r.s)}</div></div>`; }).join('');
+}
+function renderLeads(){
+  const sel=$('#fCamp').value;
+  let L=(DATA.leads||[]).filter(x=>!sel||x.adset===sel);
+  $('#leadCount').textContent = `${L.length} lead${L.length===1?'':'s'}`;
+  if(!L.length){ $('#lt').innerHTML='<tr><td class="note">No leads for this selection.</td></tr>'; return; }
+  const hasPhone=L.some(x=>x.phone);
+  $('#lt').innerHTML='<tr><th>Received</th><th>Name</th><th>Email</th>'+(hasPhone?'<th>Phone</th>':'')+'<th>Company</th><th>Interested in</th><th>Ad set</th><th>Language</th><th>Status</th></tr>'+
+    L.map(x=>`<tr><td>${x.at}</td><td>${x.name}</td><td><a href="mailto:${x.email}" style="color:var(--accent-hi)">${x.email}</a></td>${hasPhone?`<td>${x.phone||''}</td>`:''}<td>${x.company||''}</td><td><span class="pill">${x.interest||''}</span></td><td>${short(x.adset||'')}</td><td>${x.lang||''}</td><td>${x.status||''}</td></tr>`).join('');
 }
 
 /* ---- update flow: parse export, encrypt, download ---- */
@@ -252,9 +353,9 @@ async function handleFile(f){
   const enc=(u[0]===0xFF&&u[1]===0xFE)?'utf-16le':(u[0]===0xFE&&u[1]===0xFF)?'utf-16be':'utf-8';
   const obj=parseExport(new TextDecoder(enc).decode(b));
   if(!obj.rows.length){ $('#dlgMsg').textContent='No usable rows found in that file.'; return; }
-  const out=await encrypt(PW,obj);
+  obj.leads=(DATA&&DATA.leads)||[]; const out=await encrypt(PW,obj);
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(out)],{type:'application/json'})); a.download='linkedin.enc.json'; a.click();
-  DATA=obj; setup(); render();
+  obj.leads=(DATA&&DATA.leads)||[]; DATA=obj; setup(); render();
   $('#dlgMsg').textContent=`Preview updated (${obj.rows.length} rows). Upload the downloaded linkedin.enc.json to the repo (replace the existing file) to publish it.`;
 }
 $('#btnUpdate').onclick=()=>{$('#dlgMsg').textContent='';$('#dlg').showModal()};
