@@ -64,7 +64,7 @@ function parseCsv(text){
   const hs = res.meta.fields || [];
   const c = {
     date: findCol(hs, ['start date (in utc)','start date','date','day']),
-    camp: findCol(hs, ['campaign name','ad set name','campaign group name','campaign']),
+    camp: findCol(hs, ['ad set name','campaign name','campaign group name','campaign']),
     spend: findCol(hs, ['total spent','spend','cost']),
     imp: findCol(hs, ['impressions']),
     clk: findCol(hs, ['clicks']),
@@ -89,7 +89,7 @@ function render(){
   const camp = $('#fCamp').value;
   const data = camp ? rows.filter(r=>r.camp===camp) : rows;
   const main = $('#main');
-  if(!data.length){ main.innerHTML = '<div class="card empty">No data yet. Export a daily performance report from LinkedIn Campaign Manager and drop it above, or save it as <code>data/linkedin.csv</code> in the repo.</div>'; return; }
+  if(!data.length){ main.innerHTML = '<div class="card empty">No data yet. Export an Ad Set Performance report from LinkedIn Campaign Manager and drop it above, or save it as <code>data/linkedin.csv</code> in the repo.</div>'; return; }
   const spend=sum(data,'spend'), imp=sum(data,'imp'), clk=sum(data,'clk'), leads=sum(data,'leads');
   const dates=[...new Set(data.map(r=>r.date))].sort();
   $('#sub').textContent = `${dates[0]} to ${dates[dates.length-1]} · ${dates.length} days`;
@@ -112,6 +112,7 @@ function render(){
   charts.push(new Chart($('#c4'),{type:'bar',data:{labels:names,datasets:[{label:'Cost per lead ($)',data:names.map(n=>{const l=sum(by[n],'leads');return l?sum(by[n],'spend')/l:null}),backgroundColor:css('--c')}]},options:{...base,indexAxis:'y'}}));
   $('#t').innerHTML = '<tr><th>Ad set</th><th>Spend</th><th>Impr.</th><th>Clicks</th><th>CTR</th><th>Leads</th><th>CPL</th></tr>' + names.map(n=>{const a=by[n],s=sum(a,'spend'),i=sum(a,'imp'),c=sum(a,'clk'),l=sum(a,'leads');return `<tr><td>${n}</td><td>${money(s)}</td><td>${num(i)}</td><td>${num(c)}</td><td>${i?(c/i*100).toFixed(2)+'%':'-'}</td><td>${num(l)}</td><td>${l?money(s/l):'-'}</td></tr>`}).join('');
 }
+function readFile(f){ f.arrayBuffer().then(b=>{ const u=new Uint8Array(b); const enc=(u[0]===0xFF&&u[1]===0xFE)?'utf-16le':(u[0]===0xFE&&u[1]===0xFF)?'utf-16be':'utf-8'; load(new TextDecoder(enc).decode(b)); }); }
 function load(text){
   rows = parseCsv(text);
   const sel=$('#fCamp'); const cur=sel.value;
@@ -119,10 +120,10 @@ function load(text){
   sel.value=cur; render();
 }
 $('#fCamp').onchange=render;
-$('#file').onchange=e=>e.target.files[0]&&e.target.files[0].text().then(load);
+$('#file').onchange=e=>e.target.files[0]&&readFile(e.target.files[0]);
 ['dragover','dragenter'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault();$('#drop').classList.add('on')}));
 ['dragleave','drop'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault();$('#drop').classList.remove('on')}));
-$('#drop').addEventListener('drop',e=>{const f=e.dataTransfer.files[0]; f&&f.text().then(load)});
+$('#drop').addEventListener('drop',e=>{const f=e.dataTransfer.files[0]; f&&readFile(f)});
 fetch('data/linkedin.csv',{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>t?load(t):render()).catch(render);
 </script>
 </body>
