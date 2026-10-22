@@ -3,128 +3,266 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Shaffra LinkedIn Dashboard</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0a0a0c">
+<title>Shaffra Ads Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--ink:#15181e;--mute:#667085;--line:#e4e7ec;--a:#0a66c2;--b:#12a37f;--c:#e08a00;--d:#8b5cf6}
-@media (prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b22;--ink:#eef1f5;--mute:#98a2b3;--line:#262c36;--a:#4a9eed;--b:#34d3a6;--c:#f5b14a;--d:#a78bfa}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
-.wrap{max-width:1120px;margin:0 auto;padding:24px 16px 48px}
-h1{font-size:22px;margin:0}.sub{color:var(--mute);margin:4px 0 20px}
-.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
-select,button,input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
-.drop{flex:1;min-width:220px;border:1px dashed var(--line);border-radius:8px;padding:8px 12px;color:var(--mute);text-align:center;cursor:pointer}
-.drop.on{border-color:var(--a);color:var(--a)}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
-.k .l{color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.04em}.k .v{font-size:26px;font-weight:650;margin-top:2px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;margin-bottom:12px}
-.card h2{font-size:14px;margin:0 0 10px;color:var(--mute);font-weight:600}
-canvas{max-height:260px}
-table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px 6px;text-align:right;border-bottom:1px solid var(--line)}
-th:first-child,td:first-child{text-align:left}th{color:var(--mute);font-weight:600;font-size:12px}
-.prog{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:8px}.prog i{display:block;height:100%;background:var(--b)}
-.empty{padding:40px 16px;text-align:center;color:var(--mute)}
+:root{
+  --canvas:#0a0a0c;--s1:#111114;--s2:#16161a;--s3:#1c1c21;
+  --ink:#f5f4f6;--mute:#9b98a3;--faint:#5e5b66;
+  --accent:#8a4af5;--accent-hi:#a685ff;--accent-deep:#8200da;--fuchsia:#e12afb;
+  --line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--canvas);color:var(--ink);font-family:Geist,ui-sans-serif,system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;
+  background-image:radial-gradient(900px 520px at 85% -8%,rgba(138,74,245,.22),transparent 60%),radial-gradient(700px 420px at -10% 8%,rgba(225,42,251,.08),transparent 60%);background-repeat:no-repeat}
+.mono{font-family:"Geist Mono",ui-monospace,monospace}
+.eyebrow{font-family:"Geist Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.eyebrow b{color:var(--accent-hi);font-weight:500;margin-right:8px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 clamp(16px,4vw,40px)}
+.mark{display:inline-flex;align-items:center;gap:10px;font-weight:600;letter-spacing:-.01em;font-size:18px}
+.orb{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 32% 28%,#fff 0,var(--accent-hi) 18%,var(--accent) 48%,var(--accent-deep) 78%,#2a0a4d 100%);box-shadow:0 0 24px rgba(138,74,245,.65)}
+button,select{font:inherit;color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--line2);padding:10px 16px;cursor:pointer;transition:all .2s var(--ease);font-size:14px}
+.btn:hover{border-color:var(--accent-hi);background:rgba(138,74,245,.12)}
+.btn.primary{background:var(--accent);border-color:var(--accent);font-weight:500}
+.btn.primary:hover{background:var(--accent-hi);border-color:var(--accent-hi)}
+
+/* gate */
+#gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.gate-card{width:100%;max-width:420px;background:rgba(17,17,20,.8);border:1px solid var(--line2);padding:36px;backdrop-filter:blur(8px)}
+.gate-card h1{font-size:26px;font-weight:600;letter-spacing:-.02em;margin:22px 0 6px}
+.gate-card p{color:var(--mute);margin:0 0 22px}
+.field{width:100%;background:var(--canvas);border:1px solid var(--line2);color:var(--ink);padding:12px 14px;font:inherit;outline:none;transition:border-color .2s}
+.field:focus{border-color:var(--accent-hi)}
+.err{color:#ff6b8a;font-size:13px;min-height:20px;margin:10px 0 4px}
+.gate-card .btn{width:100%;justify-content:center}
+
+/* app */
+header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0;border-bottom:1px solid var(--line)}
+.stamp{display:flex;align-items:center;gap:10px;border:1px solid var(--line2);padding:8px 14px;background:rgba(17,17,20,.7)}
+.dot{width:7px;height:7px;border-radius:50%;background:#3ddc97;box-shadow:0 0 10px #3ddc97}
+.stamp .mono{font-size:12px;color:var(--mute)}.stamp span.v{color:var(--ink)}
+.hero{padding:44px 0 26px}
+.hero h1{font-size:clamp(30px,5vw,46px);font-weight:600;letter-spacing:-.03em;line-height:1.08;margin:10px 0 10px}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent-hi),var(--fuchsia));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--mute);max-width:640px;margin:0}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:26px 0 22px}
+select{background:var(--s1);border:1px solid var(--line2);padding:10px 12px;cursor:pointer}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));border:1px solid var(--line);background:var(--s1)}
+.kpi{padding:20px 20px 18px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 -1px -1px 0}
+.kpi .l{font-family:"Geist Mono",monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.kpi .v{font-size:30px;font-weight:500;letter-spacing:-.02em;margin-top:6px;font-variant-numeric:tabular-nums}
+.kpi.hl .v{background:linear-gradient(90deg,var(--accent-hi),var(--fuchsia));-webkit-background-clip:text;background-clip:text;color:transparent}
+section{margin-top:44px}
+.sh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px}
+.card{background:var(--s1);border:1px solid var(--line);padding:20px}
+.card h2{font-size:14px;font-weight:500;margin:0 0 16px;color:var(--ink)}
+.card h2 span{color:var(--mute);font-weight:400;margin-left:8px}
+canvas{max-height:280px}
+.bar{height:6px;background:var(--s3);margin:12px 0 8px;position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--accent),var(--fuchsia));box-shadow:0 0 16px rgba(138,74,245,.6)}
 .scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{padding:12px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+th{font-family:"Geist Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-weight:400}
+tr:last-child td{border-bottom:0}
+footer{margin:60px 0 40px;padding-top:20px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--faint);font-size:12px}
+.hidden{display:none!important}
+.note{color:var(--mute);font-size:13px}
+.drop{border:1px dashed var(--line2);padding:16px;text-align:center;color:var(--mute);cursor:pointer;margin-top:12px}
+.drop.on{border-color:var(--accent-hi);color:var(--accent-hi)}
+dialog{background:var(--s1);color:var(--ink);border:1px solid var(--line2);padding:28px;max-width:520px;width:calc(100% - 32px)}
+dialog::backdrop{background:rgba(0,0,0,.7)}
+dialog h3{margin:0 0 8px;font-size:20px;font-weight:600}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Shaffra LinkedIn Dashboard</h1>
-  <p class="sub" id="sub">Spend, leads and cost per lead from Campaign Manager exports.</p>
-  <div class="bar">
-    <select id="fCamp"><option value="">All ad sets</option></select>
-    <label class="drop" id="drop">Drop a Campaign Manager CSV here, or click to choose<input id="file" type="file" accept=".csv,.txt" hidden></label>
-  </div>
-  <div id="main"></div>
+
+<div id="gate">
+  <form class="gate-card" id="gateForm" autocomplete="off">
+    <div class="mark"><span class="orb"></span>Shaffra</div>
+    <h1>Ads Dashboard</h1>
+    <p>Enter the access password to view LinkedIn campaign performance.</p>
+    <input class="field" id="pw" type="password" placeholder="Password" autofocus>
+    <div class="err" id="err"></div>
+    <button class="btn primary" type="submit" id="go">Enter dashboard</button>
+  </form>
 </div>
+
+<div id="app" class="hidden">
+  <div class="wrap">
+    <header class="top">
+      <div class="mark"><span class="orb"></span>Shaffra</div>
+      <div class="stamp"><span class="dot"></span><span class="mono">LAST UPDATED&nbsp;<span class="v" id="updated">...</span></span></div>
+    </header>
+
+    <div class="hero">
+      <div class="eyebrow"><b>01</b>LinkedIn Ads</div>
+      <h1>Campaign <em>performance</em></h1>
+      <p id="range">Spend, leads and cost per lead across Shaffra's live ad sets.</p>
+    </div>
+
+    <div class="toolbar">
+      <select id="fCamp" aria-label="Filter by ad set"><option value="">All ad sets</option></select>
+      <button class="btn" id="btnUpdate" type="button">Update data</button>
+      <button class="btn" id="btnLock" type="button">Lock</button>
+    </div>
+
+    <div id="main"></div>
+
+    <footer><span>Shaffra · AI employees for the GCC</span><span>Source: LinkedIn Campaign Manager exports</span></footer>
+  </div>
+</div>
+
+<dialog id="dlg">
+  <h3>Update data</h3>
+  <p class="note">Drop a fresh <b>Ad Set Performance</b> CSV from Campaign Manager. The page encrypts it with your password and gives you a file to upload to the repo as <span class="mono">linkedin.enc.json</span> (replace the existing one).</p>
+  <label class="drop" id="drop">Drop CSV here or click to choose<input id="file" type="file" accept=".csv,.txt" hidden></label>
+  <p class="note" id="dlgMsg"></p>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px"><button class="btn" id="dlgClose" type="button">Close</button></div>
+</dialog>
+
 <script>
-const CREDIT_TARGET = 250; // LinkedIn "Spend $250, Get $250" offer
-const BUDGET_LINES = {};   // optional: {"Ad set name": dailyBudget}
+const CREDIT_TARGET = 250;
+const ENC_URL = 'linkedin.enc.json';
+const PALETTE = ['#8a4af5','#e12afb','#a685ff','#5e5b66','#8200da'];
 const $ = s => document.querySelector(s);
-let rows = [], charts = [];
 const money = n => '$' + (n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
 const num = n => (n||0).toLocaleString();
-const toN = v => { const n = parseFloat(String(v??'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
+const b64d = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const b64e = u => btoa(String.fromCharCode(...u));
+const te = new TextEncoder(), td = new TextDecoder();
+let PW = '', DATA = null, charts = [];
 
-function findCol(headers, names){
-  const h = headers.map(x => String(x).toLowerCase().trim());
-  for (const n of names){ const i = h.findIndex(x => x === n); if (i>=0) return headers[i]; }
-  for (const n of names){ const i = h.findIndex(x => x.includes(n)); if (i>=0) return headers[i]; }
-  return null;
+async function key(pw, salt, iter){
+  const km = await crypto.subtle.importKey('raw', te.encode(pw), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:iter, hash:'SHA-256'}, km, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
 }
-function parseCsv(text){
-  text = text.replace(/^﻿/,'');
-  const lines = text.split(/\r?\n/);
-  let start = lines.findIndex(l => /impressions/i.test(l) && /(spent|spend|cost)/i.test(l));
-  if (start < 0) start = 0;
-  const delim = (lines[start].match(/\t/g)||[]).length > (lines[start].match(/,/g)||[]).length ? '\t' : ',';
-  const res = Papa.parse(lines.slice(start).join('\n'), {header:true, skipEmptyLines:true, delimiter:delim});
-  const hs = res.meta.fields || [];
-  const c = {
-    date: findCol(hs, ['start date (in utc)','start date','date','day']),
-    camp: findCol(hs, ['ad set name','campaign name','campaign group name','campaign']),
-    spend: findCol(hs, ['total spent','spend','cost']),
-    imp: findCol(hs, ['impressions']),
-    clk: findCol(hs, ['clicks']),
-    leads: findCol(hs, ['leads (form opens)','leads','lead form completions','one-click leads'])
-  };
-  return res.data.map(r => ({
-    date: normDate(r[c.date]), camp: (r[c.camp]||'All').trim(),
-    spend: toN(r[c.spend]), imp: toN(r[c.imp]), clk: toN(r[c.clk]), leads: toN(r[c.leads])
-  })).filter(r => r.date && (r.spend || r.imp || r.clk || r.leads));
+async function decrypt(pw, f){
+  const k = await key(pw, b64d(f.salt), f.iter);
+  const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv:b64d(f.iv)}, k, b64d(f.ct));
+  return JSON.parse(td.decode(pt));
 }
-function normDate(v){
-  if(!v) return null; const s = String(v).trim();
-  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
-  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (m) return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
-  const d = new Date(s); return isNaN(d) ? null : d.toISOString().slice(0,10);
+async function encrypt(pw, obj){
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), iter = 250000;
+  const k = await key(pw, salt, iter);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM', iv}, k, te.encode(JSON.stringify(obj))));
+  return {v:1, iter, salt:b64e(salt), iv:b64e(iv), ct:b64e(ct)};
 }
-function sum(a,k){ return a.reduce((t,r)=>t+r[k],0); }
-function group(a,key){ const m={}; a.forEach(r=>{(m[r[key]]=m[r[key]]||[]).push(r)}); return m; }
+
+async function unlock(pw){
+  const res = await fetch(ENC_URL + '?t=' + Date.now(), {cache:'no-store'});
+  if(!res.ok) throw new Error('missing');
+  DATA = await decrypt(pw, await res.json());   // throws if the password is wrong
+  PW = pw;
+  try{ sessionStorage.setItem('shx', pw); }catch(e){}
+  $('#gate').classList.add('hidden'); $('#app').classList.remove('hidden');
+  setup(); render();
+}
+$('#gateForm').addEventListener('submit', async e => {
+  e.preventDefault(); $('#err').textContent=''; $('#go').disabled = true;
+  try{ await unlock($('#pw').value); }
+  catch(x){ $('#err').textContent = x.message==='missing' ? 'Data file not found yet. Try again in a minute.' : 'Incorrect password.'; }
+  $('#go').disabled = false;
+});
+$('#btnLock').onclick = () => { try{sessionStorage.removeItem('shx')}catch(e){} location.reload(); };
+(async()=>{ let p=''; try{p=sessionStorage.getItem('shx')||''}catch(e){} if(p){ try{ await unlock(p); }catch(e){ try{sessionStorage.removeItem('shx')}catch(_){} } } })();
+
+function setup(){
+  const d = new Date(DATA.updated);
+  $('#updated').textContent = isNaN(d) ? 'n/a' : d.toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'}) + ' (' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')';
+  const sel = $('#fCamp'); sel.innerHTML = '<option value="">All ad sets</option>' + [...new Set(DATA.rows.map(r=>r.camp))].map(n=>`<option>${n}</option>`).join('');
+  sel.onchange = render;
+}
+const sum = (a,k) => a.reduce((t,r)=>t+r[k],0);
+const group = (a,k) => { const m={}; a.forEach(r=>(m[r[k]]=m[r[k]]||[]).push(r)); return m; };
+const short = n => n.replace(/ - Lead Gen - Oct 2026/,'').replace(/Boost Post Website Visits.*/,'Boost post');
 
 function render(){
   charts.forEach(c=>c.destroy()); charts=[];
-  const camp = $('#fCamp').value;
-  const data = camp ? rows.filter(r=>r.camp===camp) : rows;
+  const camp = $('#fCamp').value, all = DATA.rows;
+  const data = camp ? all.filter(r=>r.camp===camp) : all;
   const main = $('#main');
-  if(!data.length){ main.innerHTML = '<div class="card empty">No data yet. Export an Ad Set Performance report from LinkedIn Campaign Manager and drop it above, or save it as <code>data/linkedin.csv</code> in the repo.</div>'; return; }
+  if(!data.length){ main.innerHTML='<div class="card note">No data for this selection.</div>'; return; }
   const spend=sum(data,'spend'), imp=sum(data,'imp'), clk=sum(data,'clk'), leads=sum(data,'leads');
   const dates=[...new Set(data.map(r=>r.date))].sort();
-  $('#sub').textContent = `${dates[0]} to ${dates[dates.length-1]} · ${dates.length} days`;
-  const kp = [['Spend',money(spend)],['Leads',num(leads)],['Cost per lead',leads?money(spend/leads):'n/a'],['Impressions',num(imp)],['Clicks',num(clk)],['CTR',imp?(clk/imp*100).toFixed(2)+'%':'n/a'],['CPC',clk?money(spend/clk):'n/a']];
-  const credit = Math.min(100, spend/CREDIT_TARGET*100);
-  main.innerHTML = `<div class="kpis">${kp.map(([l,v])=>`<div class="card k"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('')}</div>
-  <div class="card" style="margin-bottom:12px"><h2>LinkedIn credit progress ($${CREDIT_TARGET} spend target, all ad sets)</h2><b>${money(sum(rows,'spend'))}</b> of ${money(CREDIT_TARGET)}<div class="prog"><i style="width:${Math.min(100,sum(rows,'spend')/CREDIT_TARGET*100)}%"></i></div></div>
-  <div class="grid"><div class="card"><h2>Daily spend</h2><canvas id="c1"></canvas></div><div class="card"><h2>Daily leads</h2><canvas id="c2"></canvas></div></div>
-  <div class="grid"><div class="card"><h2>Cumulative spend and leads</h2><canvas id="c3"></canvas></div><div class="card"><h2>Cost per lead by ad set</h2><canvas id="c4"></canvas></div></div>
-  <div class="card"><h2>By ad set</h2><div class="scroll"><table id="t"></table></div></div>`;
-  const byDay = group(data,'date');
-  const ds = dates.map(d=>({spend:sum(byDay[d],'spend'),leads:sum(byDay[d],'leads')}));
-  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const base = {responsive:true,plugins:{legend:{labels:{color:css('--mute')}}},scales:{x:{ticks:{color:css('--mute')},grid:{display:false}},y:{ticks:{color:css('--mute')},grid:{color:css('--line')},beginAtZero:true}}};
-  charts.push(new Chart($('#c1'),{type:'bar',data:{labels:dates,datasets:[{label:'Spend ($)',data:ds.map(d=>d.spend),backgroundColor:css('--a')}]},options:base}));
-  charts.push(new Chart($('#c2'),{type:'bar',data:{labels:dates,datasets:[{label:'Leads',data:ds.map(d=>d.leads),backgroundColor:css('--b')}]},options:base}));
-  let cs=0,cl=0;
-  charts.push(new Chart($('#c3'),{type:'line',data:{labels:dates,datasets:[{label:'Cumulative spend ($)',data:ds.map(d=>cs+=d.spend),borderColor:css('--a'),tension:.25},{label:'Cumulative leads',data:ds.map(d=>cl+=d.leads),borderColor:css('--b'),tension:.25,yAxisID:'y2'}]},options:{...base,scales:{...base.scales,y2:{position:'right',beginAtZero:true,grid:{display:false},ticks:{color:css('--mute')}}}}}));
-  const by = group(data,'camp'), names=Object.keys(by);
-  charts.push(new Chart($('#c4'),{type:'bar',data:{labels:names,datasets:[{label:'Cost per lead ($)',data:names.map(n=>{const l=sum(by[n],'leads');return l?sum(by[n],'spend')/l:null}),backgroundColor:css('--c')}]},options:{...base,indexAxis:'y'}}));
-  $('#t').innerHTML = '<tr><th>Ad set</th><th>Spend</th><th>Impr.</th><th>Clicks</th><th>CTR</th><th>Leads</th><th>CPL</th></tr>' + names.map(n=>{const a=by[n],s=sum(a,'spend'),i=sum(a,'imp'),c=sum(a,'clk'),l=sum(a,'leads');return `<tr><td>${n}</td><td>${money(s)}</td><td>${num(i)}</td><td>${num(c)}</td><td>${i?(c/i*100).toFixed(2)+'%':'-'}</td><td>${num(l)}</td><td>${l?money(s/l):'-'}</td></tr>`}).join('');
+  $('#range').textContent = `${dates[0]} to ${dates[dates.length-1]} · ${dates.length} day${dates.length>1?'s':''} of delivery`;
+  const k = [['Spend',money(spend),0],['Leads',num(leads),1],['Cost per lead',leads?money(spend/leads):'n/a',1],['Impressions',num(imp),0],['Clicks',num(clk),0],['CTR',imp?(clk/imp*100).toFixed(2)+'%':'n/a',0],['CPC',clk?money(spend/clk):'n/a',0]];
+  const total = sum(all,'spend');
+  main.innerHTML = `
+  <div class="kpis">${k.map(([l,v,h])=>`<div class="kpi ${h?'hl':''}"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('')}</div>
+  <section><div class="sh"><div class="eyebrow"><b>02</b>LinkedIn credit</div></div>
+    <div class="card"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b>${money(total)}</b> <span class="note">of ${money(CREDIT_TARGET)} spend target</span></div><div class="note">${Math.max(0,CREDIT_TARGET-total)>0?money(CREDIT_TARGET-total)+' to go':'Target reached'}</div></div>
+    <div class="bar"><i style="width:${Math.min(100,total/CREDIT_TARGET*100)}%"></i></div>
+    <div class="note">Counts spend across all ad sets, including the boost post.</div></div></section>
+  <section><div class="sh"><div class="eyebrow"><b>03</b>Trends</div></div>
+    <div class="grid"><div class="card"><h2>Daily spend<span>USD</span></h2><canvas id="c1"></canvas></div><div class="card"><h2>Daily leads</h2><canvas id="c2"></canvas></div></div>
+    <div class="grid" style="margin-top:16px"><div class="card"><h2>Cumulative spend and leads</h2><canvas id="c3"></canvas></div><div class="card"><h2>Cost per lead<span>by ad set</span></h2><canvas id="c4"></canvas></div></div></section>
+  <section><div class="sh"><div class="eyebrow"><b>04</b>Ad sets</div></div>
+    <div class="card scroll"><table id="t"></table></div></section>`;
+
+  Chart.defaults.font.family='Geist, system-ui, sans-serif'; Chart.defaults.color='#9b98a3';
+  const names=[...new Set(data.map(r=>r.camp))];
+  const scales = (extra={}) => ({x:{stacked:true,grid:{display:false},border:{color:'rgba(255,255,255,.14)'},ticks:{color:'#9b98a3'}},y:{stacked:true,beginAtZero:true,grid:{color:'rgba(255,255,255,.06)'},border:{display:false},ticks:{color:'#9b98a3'},...extra}});
+  const opts = (extra) => ({responsive:true,plugins:{legend:{labels:{color:'#9b98a3',boxWidth:10,boxHeight:10}}},scales:scales(extra)});
+  const stacked = key => names.map((n,i)=>({label:short(n),data:dates.map(d=>data.filter(r=>r.date===d&&r.camp===n).reduce((t,r)=>t+r[key],0)),backgroundColor:PALETTE[i%PALETTE.length],borderWidth:0}));
+  charts.push(new Chart($('#c1'),{type:'bar',data:{labels:dates,datasets:stacked('spend')},options:opts()}));
+  charts.push(new Chart($('#c2'),{type:'bar',data:{labels:dates,datasets:stacked('leads')},options:opts({ticks:{stepSize:1,color:'#9b98a3'}})}));
+  let cs=0,cl=0; const byD=group(data,'date');
+  const ds=dates.map(d=>({s:sum(byD[d],'spend'),l:sum(byD[d],'leads')}));
+  charts.push(new Chart($('#c3'),{type:'line',data:{labels:dates,datasets:[
+    {label:'Spend ($)',data:ds.map(d=>cs+=d.s),borderColor:'#a685ff',backgroundColor:'rgba(138,74,245,.18)',fill:true,tension:.3,pointRadius:3},
+    {label:'Leads',data:ds.map(d=>cl+=d.l),borderColor:'#e12afb',tension:.3,pointRadius:3,yAxisID:'y2'}]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#9b98a3',boxWidth:10,boxHeight:10}}},scales:{x:{grid:{display:false},border:{color:'rgba(255,255,255,.14)'}},y:{beginAtZero:true,grid:{color:'rgba(255,255,255,.06)'},border:{display:false}},y2:{position:'right',beginAtZero:true,grid:{display:false},border:{display:false},ticks:{stepSize:1}}}}}));
+  const by=group(data,'camp');
+  const cplNames=names.filter(n=>sum(by[n],'leads')>0);
+  charts.push(new Chart($('#c4'),{type:'bar',data:{labels:cplNames.map(short),datasets:[{label:'Cost per lead ($)',data:cplNames.map(n=>sum(by[n],'spend')/sum(by[n],'leads')),backgroundColor:'#8a4af5',borderWidth:0}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'rgba(255,255,255,.06)'},border:{display:false}},y:{grid:{display:false},border:{color:'rgba(255,255,255,.14)'}}}}}));
+  $('#t').innerHTML='<tr><th>Ad set</th><th>Spend</th><th>Impr.</th><th>Clicks</th><th>CTR</th><th>Leads</th><th>CPL</th></tr>'+names.map(n=>{const a=by[n],s=sum(a,'spend'),i=sum(a,'imp'),c=sum(a,'clk'),l=sum(a,'leads');return `<tr><td>${short(n)}</td><td>${money(s)}</td><td>${num(i)}</td><td>${num(c)}</td><td>${i?(c/i*100).toFixed(2)+'%':'-'}</td><td>${num(l)}</td><td>${l?money(s/l):'-'}</td></tr>`}).join('');
 }
-function readFile(f){ f.arrayBuffer().then(b=>{ const u=new Uint8Array(b); const enc=(u[0]===0xFF&&u[1]===0xFE)?'utf-16le':(u[0]===0xFE&&u[1]===0xFF)?'utf-16be':'utf-8'; load(new TextDecoder(enc).decode(b)); }); }
-function load(text){
-  rows = parseCsv(text);
-  const sel=$('#fCamp'); const cur=sel.value;
-  sel.innerHTML='<option value="">All ad sets</option>'+[...new Set(rows.map(r=>r.camp))].map(n=>`<option>${n}</option>`).join('');
-  sel.value=cur; render();
+
+/* ---- update flow: parse export, encrypt, download ---- */
+const toN = v => { const n=parseFloat(String(v??'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
+const fc = (hs,names)=>{const h=hs.map(x=>String(x).toLowerCase().trim());for(const n of names){const i=h.findIndex(x=>x===n);if(i>=0)return hs[i]}for(const n of names){const i=h.findIndex(x=>x.includes(n));if(i>=0)return hs[i]}return null};
+function nd(v){ if(!v)return null; const s=String(v).trim(); let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m)return `${m[1]}-${m[2]}-${m[3]}`; m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if(m)return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`; return null; }
+function parseExport(text){
+  text=text.replace(/^﻿/,''); const lines=text.split(/\r?\n/);
+  const gen=(text.match(/Date Generated:\s*([^"\r\n]+)/)||[])[1];
+  let updated=new Date().toISOString();
+  if(gen){ const d=new Date(gen.trim().replace(/,\s*(\d{1,2}:\d{2}\s*[AP]M)/i,' $1')+' UTC'); if(!isNaN(d)) updated=d.toISOString(); }
+  let st=lines.findIndex(l=>/impressions/i.test(l)&&/(spent|spend|cost)/i.test(l)); if(st<0)st=0;
+  const delim=(lines[st].match(/\t/g)||[]).length>(lines[st].match(/,/g)||[]).length?'\t':',';
+  const res=Papa.parse(lines.slice(st).join('\n'),{header:true,skipEmptyLines:true,delimiter:delim}); const hs=res.meta.fields||[];
+  const c={date:fc(hs,['start date (in utc)','start date','date','day']),camp:fc(hs,['ad set name','campaign name']),spend:fc(hs,['total spent','spend']),imp:fc(hs,['impressions']),clk:fc(hs,['clicks']),leads:fc(hs,['leads'])};
+  const rows=res.data.map(r=>({date:nd(r[c.date]),camp:String(r[c.camp]||'All').trim(),spend:toN(r[c.spend]),imp:toN(r[c.imp]),clk:toN(r[c.clk]),leads:toN(r[c.leads])})).filter(r=>r.date&&(r.spend||r.imp||r.clk||r.leads));
+  rows.sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.camp.localeCompare(b.camp));
+  return {updated,rows};
 }
-$('#fCamp').onchange=render;
-$('#file').onchange=e=>e.target.files[0]&&readFile(e.target.files[0]);
+async function handleFile(f){
+  const b=await f.arrayBuffer(), u=new Uint8Array(b);
+  const enc=(u[0]===0xFF&&u[1]===0xFE)?'utf-16le':(u[0]===0xFE&&u[1]===0xFF)?'utf-16be':'utf-8';
+  const obj=parseExport(new TextDecoder(enc).decode(b));
+  if(!obj.rows.length){ $('#dlgMsg').textContent='No usable rows found in that file.'; return; }
+  const out=await encrypt(PW,obj);
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(out)],{type:'application/json'})); a.download='linkedin.enc.json'; a.click();
+  DATA=obj; setup(); render();
+  $('#dlgMsg').textContent=`Preview updated (${obj.rows.length} rows). Upload the downloaded linkedin.enc.json to the repo (replace the existing file) to publish it.`;
+}
+$('#btnUpdate').onclick=()=>{$('#dlgMsg').textContent='';$('#dlg').showModal()};
+$('#dlgClose').onclick=()=>$('#dlg').close();
+$('#file').onchange=e=>e.target.files[0]&&handleFile(e.target.files[0]);
 ['dragover','dragenter'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault();$('#drop').classList.add('on')}));
 ['dragleave','drop'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault();$('#drop').classList.remove('on')}));
-$('#drop').addEventListener('drop',e=>{const f=e.dataTransfer.files[0]; f&&readFile(f)});
-fetch('data/linkedin.csv',{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>t?load(t):render()).catch(render);
+$('#drop').addEventListener('drop',e=>{const f=e.dataTransfer.files[0]; f&&handleFile(f)});
 </script>
 </body>
 </html>

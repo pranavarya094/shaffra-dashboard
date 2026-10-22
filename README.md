@@ -1,14 +1,11 @@
 # shaffra-dashboard
 
-Static LinkedIn ads dashboard for Shaffra: spend, leads, cost per lead, CTR, per ad set and daily trends.
+Password-protected LinkedIn ads dashboard for Shaffra (spend, leads, cost per lead, trends per ad set).
+
+The data lives in `linkedin.enc.json`, encrypted in the browser-compatible format (PBKDF2 + AES-GCM). The page decrypts it after the password is entered. No plain data is stored in this repo.
 
 ## Update the data
-1. In LinkedIn Campaign Manager, open the account, set the date range, choose Export, and pick a performance report with a **Daily** breakdown by ad set. Include Spend, Impressions, Clicks and Leads.
-2. Save the file as `data/linkedin.csv` in this repo and commit it.
-3. The page redraws from that file. You can also drag any export onto the page to view it without committing.
-
-## Publish
-Settings, Pages, deploy from the `main` branch root. If the repo is public, the numbers are public. Keep it private unless you want that.
-
-## Later
-Replace step 1 with the LinkedIn Marketing API in a scheduled GitHub Action once API access is approved. The page does not change.
+1. Open the dashboard, enter the password, click **Update data**.
+2. Drop a fresh Ad Set Performance CSV exported from LinkedIn Campaign Manager.
+3. The page previews it and downloads a new `linkedin.enc.json`.
+4. Upload that file to this repo, replacing the old one. "Last updated" shows the export's generation time.
