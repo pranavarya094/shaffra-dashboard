@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shaffra LinkedIn Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#15181e;--mute:#667085;--line:#e4e7ec;--a:#0a66c2;--b:#12a37f;--c:#e08a00;--d:#8b5cf6}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b22;--ink:#eef1f5;--mute:#98a2b3;--line:#262c36;--a:#4a9eed;--b:#34d3a6;--c:#f5b14a;--d:#a78bfa}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1120px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:22px;margin:0}.sub{color:var(--mute);margin:4px 0 20px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+select,button,input{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+.drop{flex:1;min-width:220px;border:1px dashed var(--line);border-radius:8px;padding:8px 12px;color:var(--mute);text-align:center;cursor:pointer}
+.drop.on{border-color:var(--a);color:var(--a)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.k .l{color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.04em}.k .v{font-size:26px;font-weight:650;margin-top:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;margin-bottom:12px}
+.card h2{font-size:14px;margin:0 0 10px;color:var(--mute);font-weight:600}
+canvas{max-height:260px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px 6px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}th{color:var(--mute);font-weight:600;font-size:12px}
+.prog{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:8px}.prog i{display:block;height:100%;background:var(--b)}
+.empty{padding:40px 16px;text-align:center;color:var(--mute)}
+.scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Shaffra LinkedIn Dashboard</h1>
+  <p class="sub" id="sub">Spend, leads and cost per lead from Campaign Manager exports.</p>
+  <div class="bar">
+    <select id="fCamp"><option value="">All ad sets</option></select>
+    <label class="drop" id="drop">Drop a Campaign Manager CSV here, or click to choose<input id="file" type="file" accept=".csv,.txt" hidden></label>
+  </div>
+  <div id="main"></div>
+</div>
+<script>
+const CREDIT_TARGET = 250; // LinkedIn "Spend $250, Get $250" offer
+const BUDGET_LINES = {};   // optional: {"Ad set name": dailyBudget}
+const $ = s => document.querySelector(s);
+let rows = [], charts = [];
+const money = n => '$' + (n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const num = n => (n||0).toLocaleString();
+const toN = v => { const n = parseFloat(String(v??'').replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
+
+function findCol(headers, names){
+  const h = headers.map(x => String(x).toLowerCase().trim());
+  for (const n of names){ const i = h.findIndex(x => x === n); if (i>=0) return headers[i]; }
+  for (const n of names){ const i = h.findIndex(x => x.includes(n)); if (i>=0) return headers[i]; }
+  return null;
+}
+function parseCsv(text){
+  text = text.replace(/^﻿/,'');
+  const lines = text.split(/\r?\n/);
+  let start = lines.findIndex(l => /impressions/i.test(l) && /(spent|spend|cost)/i.test(l));
+  if (start < 0) start = 0;
+  const delim = (lines[start].match(/\t/g)||[]).length > (lines[start].match(/,/g)||[]).length ? '\t' : ',';
+  const res = Papa.parse(lines.slice(start).join('\n'), {header:true, skipEmptyLines:true, delimiter:delim});
+  const hs = res.meta.fields || [];
+  const c = {
+    date: findCol(hs, ['start date (in utc)','start date','date','day']),
+    camp: findCol(hs, ['campaign name','ad set name','campaign group name','campaign']),
+    spend: findCol(hs, ['total spent','spend','cost']),
+    imp: findCol(hs, ['impressions']),
+    clk: findCol(hs, ['clicks']),
+    leads: findCol(hs, ['leads (form opens)','leads','lead form completions','one-click leads'])
+  };
+  return res.data.map(r => ({
+    date: normDate(r[c.date]), camp: (r[c.camp]||'All').trim(),
+    spend: toN(r[c.spend]), imp: toN(r[c.imp]), clk: toN(r[c.clk]), leads: toN(r[c.leads])
+  })).filter(r => r.date && (r.spend || r.imp || r.clk || r.leads));
+}
+function normDate(v){
+  if(!v) return null; const s = String(v).trim();
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (m) return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
+  const d = new Date(s); return isNaN(d) ? null : d.toISOString().slice(0,10);
+}
+function sum(a,k){ return a.reduce((t,r)=>t+r[k],0); }
+function group(a,key){ const m={}; a.forEach(r=>{(m[r[key]]=m[r[key]]||[]).push(r)}); return m; }
+
+function render(){
+  charts.forEach(c=>c.destroy()); charts=[];
+  const camp = $('#fCamp').value;
+  const data = camp ? rows.filter(r=>r.camp===camp) : rows;
+  const main = $('#main');
+  if(!data.length){ main.innerHTML = '<div class="card empty">No data yet. Export a daily performance report from LinkedIn Campaign Manager and drop it above, or save it as <code>data/linkedin.csv</code> in the repo.</div>'; return; }
+  const spend=sum(data,'spend'), imp=sum(data,'imp'), clk=sum(data,'clk'), leads=sum(data,'leads');
+  const dates=[...new Set(data.map(r=>r.date))].sort();
+  $('#sub').textContent = `${dates[0]} to ${dates[dates.length-1]} · ${dates.length} days`;
+  const kp = [['Spend',money(spend)],['Leads',num(leads)],['Cost per lead',leads?money(spend/leads):'n/a'],['Impressions',num(imp)],['Clicks',num(clk)],['CTR',imp?(clk/imp*100).toFixed(2)+'%':'n/a'],['CPC',clk?money(spend/clk):'n/a']];
+  const credit = Math.min(100, spend/CREDIT_TARGET*100);
+  main.innerHTML = `<div class="kpis">${kp.map(([l,v])=>`<div class="card k"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('')}</div>
+  <div class="card" style="margin-bottom:12px"><h2>LinkedIn credit progress ($${CREDIT_TARGET} spend target, all ad sets)</h2><b>${money(sum(rows,'spend'))}</b> of ${money(CREDIT_TARGET)}<div class="prog"><i style="width:${Math.min(100,sum(rows,'spend')/CREDIT_TARGET*100)}%"></i></div></div>
+  <div class="grid"><div class="card"><h2>Daily spend</h2><canvas id="c1"></canvas></div><div class="card"><h2>Daily leads</h2><canvas id="c2"></canvas></div></div>
+  <div class="grid"><div class="card"><h2>Cumulative spend and leads</h2><canvas id="c3"></canvas></div><div class="card"><h2>Cost per lead by ad set</h2><canvas id="c4"></canvas></div></div>
+  <div class="card"><h2>By ad set</h2><div class="scroll"><table id="t"></table></div></div>`;
+  const byDay = group(data,'date');
+  const ds = dates.map(d=>({spend:sum(byDay[d],'spend'),leads:sum(byDay[d],'leads')}));
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const base = {responsive:true,plugins:{legend:{labels:{color:css('--mute')}}},scales:{x:{ticks:{color:css('--mute')},grid:{display:false}},y:{ticks:{color:css('--mute')},grid:{color:css('--line')},beginAtZero:true}}};
+  charts.push(new Chart($('#c1'),{type:'bar',data:{labels:dates,datasets:[{label:'Spend ($)',data:ds.map(d=>d.spend),backgroundColor:css('--a')}]},options:base}));
+  charts.push(new Chart($('#c2'),{type:'bar',data:{labels:dates,datasets:[{label:'Leads',data:ds.map(d=>d.leads),backgroundColor:css('--b')}]},options:base}));
+  let cs=0,cl=0;
+  charts.push(new Chart($('#c3'),{type:'line',data:{labels:dates,datasets:[{label:'Cumulative spend ($)',data:ds.map(d=>cs+=d.spend),borderColor:css('--a'),tension:.25},{label:'Cumulative leads',data:ds.map(d=>cl+=d.leads),borderColor:css('--b'),tension:.25,yAxisID:'y2'}]},options:{...base,scales:{...base.scales,y2:{position:'right',beginAtZero:true,grid:{display:false},ticks:{color:css('--mute')}}}}}));
+  const by = group(data,'camp'), names=Object.keys(by);
+  charts.push(new Chart($('#c4'),{type:'bar',data:{labels:names,datasets:[{label:'Cost per lead ($)',data:names.map(n=>{const l=sum(by[n],'leads');return l?sum(by[n],'spend')/l:null}),backgroundColor:css('--c')}]},options:{...base,indexAxis:'y'}}));
+  $('#t').innerHTML = '<tr><th>Ad set</th><th>Spend</th><th>Impr.</th><th>Clicks</th><th>CTR</th><th>Leads</th><th>CPL</th></tr>' + names.map(n=>{const a=by[n],s=sum(a,'spend'),i=sum(a,'imp'),c=sum(a,'clk'),l=sum(a,'leads');return `<tr><td>${n}</td><td>${money(s)}</td><td>${num(i)}</td><td>${num(c)}</td><td>${i?(c/i*100).toFixed(2)+'%':'-'}</td><td>${num(l)}</td><td>${l?money(s/l):'-'}</td></tr>`}).join('');
+}
+function load(text){
+  rows = parseCsv(text);
+  const sel=$('#fCamp'); const cur=sel.value;
+  sel.innerHTML='<option value="">All ad sets</option>'+[...new Set(rows.map(r=>r.camp))].map(n=>`<option>${n}</option>`).join('');
+  sel.value=cur; render();
+}
+$('#fCamp').onchange=render;
+$('#file').onchange=e=>e.target.files[0]&&e.target.files[0].text().then(load);
+['dragover','dragenter'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault();$('#drop').classList.add('on')}));
+['dragleave','drop'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault();$('#drop').classList.remove('on')}));
+$('#drop').addEventListener('drop',e=>{const f=e.dataTransfer.files[0]; f&&f.text().then(load)});
+fetch('data/linkedin.csv',{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>t?load(t):render()).catch(render);
+</script>
+</body>
+</html>
