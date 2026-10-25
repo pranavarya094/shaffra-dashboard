@@ -327,8 +327,8 @@ function renderLeads(){
   $('#leadCount').textContent = `${L.length} lead${L.length===1?'':'s'}`;
   if(!L.length){ $('#lt').innerHTML='<tr><td class="note">No leads for this selection.</td></tr>'; return; }
   const hasPhone=L.some(x=>x.phone);
-  $('#lt').innerHTML='<tr><th>Received</th><th>Name</th><th>Email</th>'+(hasPhone?'<th>Phone</th>':'')+'<th>Company</th><th>Interested in</th><th>Ad set</th><th>Language</th><th>Status</th></tr>'+
-    L.map(x=>`<tr><td>${x.at}</td><td>${x.name}</td><td><a href="mailto:${x.email}" style="color:var(--accent-hi)">${x.email}</a></td>${hasPhone?`<td>${x.phone||''}</td>`:''}<td>${x.company||''}</td><td><span class="pill">${x.interest||''}</span></td><td>${short(x.adset||'')}</td><td>${x.lang||''}</td><td>${x.status||''}</td></tr>`).join('');
+  $('#lt').innerHTML='<tr><th>Received</th><th>Name</th><th>Job title</th><th>Email</th>'+(hasPhone?'<th>Phone</th>':'')+'<th>Company</th><th>Interested in</th><th>Ad set</th><th>Language</th><th>Status</th></tr>'+
+    L.map(x=>`<tr><td>${x.at}</td><td>${x.name}</td><td>${x.title||'-'}</td><td><a href="mailto:${x.email}" style="color:var(--accent-hi)">${x.email}</a></td>${hasPhone?`<td>${x.phone||''}</td>`:''}<td>${x.company||''}</td><td><span class="pill">${x.interest||''}</span></td><td>${short(x.adset||'')}</td><td>${x.lang||''}</td><td>${x.status||''}</td></tr>`).join('');
 }
 
 /* ---- update flow: parse export, encrypt, download ---- */
